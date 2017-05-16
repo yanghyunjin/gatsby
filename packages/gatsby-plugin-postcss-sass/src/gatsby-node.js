@@ -1,6 +1,7 @@
 import ExtractTextPlugin from "extract-text-webpack-plugin"
 
 exports.modifyWebpackConfig = ({ config, stage }, { postCssPlugins }) => {
+  console.log(config)
   const cssModulesConf = `css?modules&minimize&importLoaders=1`
   const cssModulesConfDev = `${cssModulesConf}&sourceMap&localIdentName=[name]---[local]---[hash:base64:5]`
 
@@ -48,7 +49,7 @@ exports.modifyWebpackConfig = ({ config, stage }, { postCssPlugins }) => {
       config.loader(`sass`, {
         test: /\.s(a|c)ss$/,
         exclude: /\.module\.s(a|c)ss$/,
-        loader: `null`,
+        loader: ExtractTextPlugin.extract(`style`, [`css`, `postcss`, `sass`]),
       })
 
       config.loader(`sassModules`, {
@@ -65,7 +66,7 @@ exports.modifyWebpackConfig = ({ config, stage }, { postCssPlugins }) => {
       config.loader(`sass`, {
         test: /\.s(a|c)ss$/,
         exclude: /\.module\.s(a|c)ss$/,
-        loader: null,
+        loader: ExtractTextPlugin.extract(`style`, [`css`, `postcss`, `sass`]),
       })
 
       config.loader(`sassModules`, {

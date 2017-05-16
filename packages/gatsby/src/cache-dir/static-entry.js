@@ -86,20 +86,22 @@ module.exports = (locals, callback) => {
   }
 
   // Add the chunk-manifest as a head component.
-  const chunkManifest = require(`!raw!../public/chunk-manifest.json`)
+  if (false) {
+    const chunkManifest = require(`!raw!../public/chunk-manifest.json`)
 
-  postBodyComponents.unshift(
-    <script
-      id="webpack-manifest"
-      dangerouslySetInnerHTML={{
-        __html: `
+    postBodyComponents.unshift(
+      <script
+        id="webpack-manifest"
+        dangerouslySetInnerHTML={{
+          __html: `
             //<![CDATA[
             window.webpackManifest = ${chunkManifest}
             //]]>
             `,
-      }}
-    />
-  )
+        }}
+      />
+    )
+  }
 
   let stats
   try {
