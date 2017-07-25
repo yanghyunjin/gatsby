@@ -8,6 +8,7 @@ const md5File = require(`md5-file/promise`)
 const crypto = require(`crypto`)
 const report = require(`yurnalist`)
 const convertHrtime = require(`convert-hrtime`)
+const path = require(`path`)
 
 const apiRunnerNode = require(`../utils/api-runner-node`)
 const { graphql } = require(`graphql`)
@@ -147,6 +148,13 @@ data
   // Now that we know the .cache directory is safe, initialize the cache
   // directory.
   initCache()
+
+  // Create cache directories for each plugin.
+  flattenedPlugins.forEach(p => {
+    const cacheDir = path.join(program.directory, `.cache`, `plugins`, p.name)
+    fs.mkdirp(cacheDir)
+    p.cacheDir = cacheDir
+  })
 
   // Ensure the public/static directory is created.
   await fs.mkdirp(`${program.directory}/public/static`)

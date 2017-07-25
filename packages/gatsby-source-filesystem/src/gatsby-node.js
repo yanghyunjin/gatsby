@@ -80,8 +80,14 @@ exports.sourceNodes = (
   // After 'ready', we handle the 'add' event without putting it into a queue.
   let pathQueue = []
   const flushPathQueue = onComplete => {
+    console.log(`flushPathQueue`, pathQueue)
     let queue = pathQueue
     pathQueue = []
+
+    // If there's nothing in the queue, return.
+    if (queue.length === 0) {
+      return onComplete()
+    }
 
     let numPathsProcessed = 0
     let numPaths = queue.length
@@ -119,12 +125,14 @@ exports.sourceNodes = (
     deleteNode(createId(path))
   })
   watcher.on(`ready`, () => {
+    console.log("\n\nready", pluginOptions, "\n\n")
     if (ready) {
       return
     }
 
     ready = true
     flushPathQueue(() => {
+      console.log("\n\ndone", pluginOptions, "\n\n")
       done()
     })
   })

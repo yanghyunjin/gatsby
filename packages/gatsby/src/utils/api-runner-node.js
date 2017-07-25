@@ -68,6 +68,7 @@ const runAPI = (plugin, api, args) => {
         hasNodeChanged,
         getNodeAndSavePathDependency,
         cache,
+        cacheDir: plugin.cacheDir,
       },
       plugin.pluginOptions,
     ]

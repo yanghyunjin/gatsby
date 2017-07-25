@@ -1,0 +1,23 @@
+{
+  "name": "using-transformer-pdfimages",
+  "private": true,
+  "description": "Gatsby example site using using-transformer-pdfimages",
+  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+  "dependencies": {
+    "gatsby": "latest",
+    "gatsby-link": "latest",
+    "gatsby-plugin-glamor": "^1.3.2",
+    "gatsby-plugin-google-analytics": "^1.0.1",
+    "gatsby-plugin-offline": "^1.0.1",
+    "gatsby-plugin-sharp": "^1.3.0",
+    "gatsby-source-filesystem": "^1.0.1",
+    "gatsby-transformer-pdfimages": "^1.0.1",
+    "gatsby-transformer-sharp": "^1.0.1"
+  },
+  "license": "MIT",
+  "main": "n/a",
+  "scripts": {
+    "develop": "gatsby develop",
+    "build": "gatsby build"
+  }
+}
