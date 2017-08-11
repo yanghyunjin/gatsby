@@ -5,27 +5,26 @@ const path = require(`path`)
 const _ = require(`lodash`)
 const resolveCwd = require(`resolve-cwd`)
 
-program.version(packageJson.version).usage(`[command] [options]`)
-
 let inGatsbySite = false
 let localPackageJSON
+let version = packageJson.version
 try {
   localPackageJSON = require(path.resolve(`./package.json`))
-  if (
-    (localPackageJSON.dependencies && localPackageJSON.dependencies.gatsby) ||
-    (localPackageJSON.devDependencies &&
-      localPackageJSON.devDependencies.gatsby)
-  ) {
+  if (localPackageJSON.dependencies && localPackageJSON.dependencies.gatsby) {
     inGatsbySite = true
+    version = localPackageJSON.dependencies.gatsby
   } else if (
     localPackageJSON.devDependencies &&
     localPackageJSON.devDependencies.gatsby
   ) {
     inGatsbySite = true
+    version = localPackageJSON.devDependencies.gatsby
   }
 } catch (e) {
   // ignore
 }
+
+program.version(version).usage(`[command] [options]`)
 
 const defaultHost = `localhost`
 
