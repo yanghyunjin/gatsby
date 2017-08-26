@@ -1,30 +1,43 @@
+/*global __PREFIX_PATHS__, __PATH_PREFIX__ */
 import React from "react"
 import { Link, NavLink } from "react-router-dom"
 import PropTypes from "prop-types"
 
-let pathPrefix = ``
-if (__PREFIX_PATHS__) {
+let pathPrefix = `/`
+if (typeof __PREFIX_PATHS__ !== `undefined` && __PREFIX_PATHS__) {
   pathPrefix = __PATH_PREFIX__
+}
+
+function normalizePath(path) {
+  return path.replace(/^\/\//g, `/`)
+}
+
+const NavLinkPropTypes = {
+  activeClassName: PropTypes.string,
+  activeStyle: PropTypes.object,
+  exact: PropTypes.bool,
+  strict: PropTypes.bool,
+  isActive: PropTypes.func,
+  location: PropTypes.object,
 }
 
 class GatsbyLink extends React.Component {
   constructor(props) {
     super()
     this.state = {
-      to: pathPrefix + props.to,
+      to: normalizePath(pathPrefix + props.to),
     }
   }
   propTypes: {
+    ...NavLinkPropTypes,
     to: PropTypes.string.isRequired,
-    activeClassName: PropTypes.string,
-    activeStyle: PropTypes.object,
     onClick: PropTypes.func,
   }
 
   componentWillReceiveProps(nextProps) {
     if (this.props.to !== nextProps.to) {
       this.setState({
-        to: pathPrefix + nextProps.to,
+        to: normalizePath(pathPrefix + nextProps.to),
       })
       ___loader.enqueue(this.state.to)
     }
@@ -36,7 +49,7 @@ class GatsbyLink extends React.Component {
 
   render() {
     const { onClick, ...rest } = this.props
-    if (this.props.activeStyle || this.props.activeClassName) {
+    if (Object.keys(NavLinkPropTypes).some(propName => this.props[propName])) {
       var El = NavLink
     } else {
       var El = Link
@@ -92,5 +105,5 @@ GatsbyLink.contextTypes = {
 export default GatsbyLink
 
 export const navigateTo = pathname => {
-  window.___navigateTo(pathPrefix + pathname)
+  window.___navigateTo(normalizePath(pathPrefix + pathname))
 }

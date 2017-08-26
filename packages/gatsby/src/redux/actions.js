@@ -4,12 +4,14 @@ import chalk from "chalk"
 const _ = require(`lodash`)
 const { bindActionCreators } = require(`redux`)
 const { stripIndent } = require(`common-tags`)
+const glob = require(`glob`)
+const path = require(`path`)
 
+const { joinPath } = require(`../utils/path`)
 const { getNode, hasNodeChanged } = require(`./index`)
-
 const { store } = require(`./index`)
 import * as joiSchemas from "../joi-schemas/joi"
-import { layoutComponentChunkName } from "../utils/js-chunk-names"
+import { generateComponentChunkName } from "../utils/js-chunk-names"
 
 const actions = {}
 
@@ -39,16 +41,16 @@ const pascalCase = _.flow(_.camelCase, _.upperFirst)
  * @example
  * createPage({
  *   path: `/my-sweet-new-page/`,
- *   component: path.resolve('./src/templates/my-sweet-new-page.js`),
- *   // context gets passed in as props to the page as well
- *   // as into the page/template's GraphQL query.
+ *   component: path.resolve(`./src/templates/my-sweet-new-page.js`),
+ *   // The context is passed as props to the component as well
+ *   // as into the component's GraphQL query.
  *   context: {
  *     id: `123456`,
  *   },
  * })
  */
 actions.createPage = (page, plugin = ``, traceId) => {
-  page.componentChunkName = layoutComponentChunkName(page.component)
+  page.componentChunkName = generateComponentChunkName(page.component)
 
   let jsonName = `${_.kebabCase(page.path)}.json`
   let internalComponentName = `Component${pascalCase(page.path)}`
@@ -57,8 +59,19 @@ actions.createPage = (page, plugin = ``, traceId) => {
     internalComponentName = `ComponentIndex`
   }
 
+  // If no layout is set we try fallback to `/src/layouts/index`.
+  if (
+    !page.layout &&
+    !glob.sync(
+      joinPath(store.getState().program.directory, `src/layouts/index.*`)
+    ).length == 0
+  ) {
+    page.layout = `index`
+  }
+
   page.jsonName = jsonName
   page.internalComponentName = internalComponentName
+  page.updatedAt = Date.now()
 
   // Ensure the page has a context object
   if (!page.context) {
@@ -87,15 +100,79 @@ actions.createPage = (page, plugin = ``, traceId) => {
 }
 
 /**
+ * Delete a layout
+ * @param {string} layout a layout object with at least the name set
+ * @example
+ * deleteLayout(layout)
+ */
+actions.deleteLayout = (layout, plugin = ``) => {
+  return {
+    type: `DELETE_LAYOUT`,
+    payload: layout,
+  }
+}
+
+/**
+ * Create a layout.
+ * @param {Object} layout a layout object
+ * @param {string} layout.component The absolute path to the component for this layout
+ * @example
+ * createLayout({
+ *   component: path.resolve(`./src/templates/myNewLayout.js`)
+ *   context: {
+ *     title: `My New Layout`
+ *   }
+ * })
+ */
+actions.createLayout = (layout, plugin = ``, traceId) => {
+  layout.id = path.parse(layout.component).name
+  layout.componentWrapperPath = joinPath(
+    store.getState().program.directory,
+    `.cache`,
+    `layouts`,
+    layout.id + `.js`
+  )
+  layout.componentChunkName = generateComponentChunkName(layout.component)
+  layout.jsonName = `layout-${_.kebabCase(layout.id)}.json`
+  layout.internalComponentName = `Component-layout-${pascalCase(layout.id)}`
+  layout.isLayout = true
+
+  // Ensure the layout has a context object
+  if (!layout.context) {
+    layout.context = {}
+  }
+
+  const result = Joi.validate(layout, joiSchemas.layoutSchema)
+
+  if (result.error) {
+    console.log(
+      chalk.blue.bgYellow(`The upserted layout didn't pass validation`)
+    )
+    console.log(chalk.bold.red(result.error))
+    console.log(layout)
+    return
+  }
+
+  return {
+    type: `CREATE_LAYOUT`,
+    plugin,
+    traceId,
+    payload: layout,
+  }
+}
+
+/**
  * Delete a node
  * @param {string} nodeId a node id
+ * @param {object} node the node object
  * @example
- * deleteNode(node.id)
+ * deleteNode(node.id, node)
  */
-actions.deleteNode = (nodeId, plugin = ``) => {
+actions.deleteNode = (nodeId, node, plugin = ``) => {
   return {
     type: `DELETE_NODE`,
     plugin,
+    node,
     payload: nodeId,
   }
 }
@@ -411,7 +488,7 @@ actions.createParentChildLink = ({ parent, child }, plugin) => {
  */
 actions.createPageDependency = ({ path, nodeId, connection }, plugin = ``) => {
   return {
-    type: `CREATE_PAGE_DEPENDENCY`,
+    type: `CREATE_COMPONENT_DEPENDENCY`,
     plugin,
     payload: {
       path,
@@ -427,26 +504,11 @@ actions.createPageDependency = ({ path, nodeId, connection }, plugin = ``) => {
  * @param {Array} paths the paths to delete.
  * @private
  */
-actions.deletePagesDependencies = paths => {
+actions.deleteComponentsDependencies = paths => {
   return {
-    type: `DELETE_PAGES_DEPENDENCIES`,
+    type: `DELETE_COMPONENTS_DEPENDENCIES`,
     payload: {
       paths,
-    },
-  }
-}
-
-/**
- * Used by the query watcher when it identifies a new component
- * which is probably a page. TODO perhaps the query watcher
- * just listens for new pages?
- * @private
- */
-actions.createPageComponent = componentPath => {
-  return {
-    type: `CREATE_PAGE_COMPONENT`,
-    payload: {
-      componentPath,
     },
   }
 }
@@ -456,9 +518,9 @@ actions.createPageComponent = componentPath => {
  * this to store the query with its component.
  * @private
  */
-actions.replacePageComponentQuery = ({ query, componentPath }) => {
+actions.replaceComponentQuery = ({ query, componentPath }) => {
   return {
-    type: `REPLACE_PAGE_COMPONENT_QUERY`,
+    type: `REPLACE_COMPONENT_QUERY`,
     payload: {
       query,
       componentPath,
